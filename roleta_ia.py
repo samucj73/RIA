@@ -1,5 +1,4 @@
-from sklearn.linear_model import SGDClassifier
-from sklearn.preprocessing import StandardScaler
+sklearn.preprocessing import StandardScaler
 from collections import deque, Counter
 import numpy as np
 
