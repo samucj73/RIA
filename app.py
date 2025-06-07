@@ -1,53 +1,63 @@
 import streamlit as st
+import json
 import time
+import os
 from fetch_and_save import fetch_latest_result, salvar_resultado_em_arquivo
 from roleta_ia import RoletaIA
-import json
-import os
 
-st.set_page_config(page_title="Roleta IA", layout="centered")
+HISTORICO_PATH = "historico_resultados.json"
 
-st.title("🎰 Previsor de Roleta com IA em Tempo Real")
+st.set_page_config(page_title="Roleta IA", layout="wide")
+st.title("🎯 Previsão Inteligente de Roleta")
 
-# Inicializa IA
-ia = RoletaIA()
+# Inicializar histórico
+if "historico" not in st.session_state:
+    if os.path.exists(HISTORICO_PATH):
+        with open(HISTORICO_PATH, "r") as f:
+            st.session_state.historico = json.load(f)
+    else:
+        st.session_state.historico = []
 
-HIST_PATH = "historico_resultados.json"
+# Captura automática do novo resultado
+with st.empty():
+    resultado = fetch_latest_result()
 
-# Carrega histórico salvo (se houver)
-if os.path.exists(HIST_PATH):
-    with open(HIST_PATH, "r") as f:
-        try:
-            historico = json.load(f)
-            ia.alimentar(historico)
-        except json.JSONDecodeError:
-            historico = []
-else:
-    historico = []
+    if resultado:
+        ultimo_timestamp = (
+            st.session_state.historico[-1]["timestamp"]
+            if st.session_state.historico else None
+        )
 
-# Inicia coleta contínua
-placeholder = st.empty()
-
-while True:
-    with placeholder.container():
-        novo_resultado = fetch_latest_result()
-        if novo_resultado and (not historico or novo_resultado["timestamp"] != historico[-1]["timestamp"]):
-            historico.append(novo_resultado)
-            salvar_resultado_em_arquivo([novo_resultado], HIST_PATH)
-            ia.alimentar([novo_resultado])
-
-        st.subheader("📌 Últimos 10 resultados")
-        ultimos = historico[-10:]
-        st.write([item["number"] for item in reversed(ultimos)])
-
-        if ia.ativo():
-            st.subheader("🔮 Previsão de IA (Top 4)")
-            previsao = ia.prever()
-            st.success(f"🎯 Números prováveis: {previsao}")
+        if resultado["timestamp"] != ultimo_timestamp:
+            novo_resultado = {
+                "number": resultado["number"],
+                "color": resultado["color"],
+                "timestamp": resultado["timestamp"],
+                "lucky_numbers": resultado["lucky_numbers"]
+            }
+            st.session_state.historico.append(novo_resultado)
+            salvar_resultado_em_arquivo([novo_resultado])
+            st.rerun()
         else:
-            st.warning(f"Aguardando pelo menos 20 sorteios... ({len(historico)}/20)")
+            st.write("🔍 Aguardando novo sorteio...")
+            time.sleep(5)
+            st.rerun()
 
-        st.subheader("📊 Estatísticas (frequência dos últimos números)")
-        st.write(ia.estatisticas())
+# Exibir últimos sorteios
+st.subheader("Últimos Sorteios")
+st.write([h["number"] for h in st.session_state.historico[-10:]])
 
-    time.sleep(15)
+# Previsão baseada em IA
+st.subheader("🔮 Previsão de Próximos 4 Números Mais Prováveis")
+
+ia = RoletaIA()
+previsoes = ia.prever_numeros(st.session_state.historico)
+
+if previsoes:
+    st.success(f"Números Prováveis: {previsoes}")
+else:
+    st.warning("Aguardando pelo menos 20 sorteios válidos para iniciar previsões.")
+
+# Mostrar histórico completo opcional
+with st.expander("📜 Ver histórico completo"):
+    st.json(st.session_state.historico)
