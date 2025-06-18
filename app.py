@@ -10,8 +10,8 @@ HISTORICO_PATH = "historico_resultados.json"
 st.set_page_config(page_title="Roleta IA", layout="wide")
 st.title("🎯 Previsão Inteligente de Roleta")
 
-# Autorefresh a cada 5 segundos (5000 ms)
-count = st_autorefresh(interval=5000, limit=None, key="auto_refresh")
+# Autorefresh a cada 2 segundos (pode ajustar para mais rápido se quiser)
+st_autorefresh(interval=2000, limit=None, key="auto_refresh")
 
 # Inicializar histórico
 if "historico" not in st.session_state:
@@ -21,14 +21,14 @@ if "historico" not in st.session_state:
     else:
         st.session_state.historico = []
 
-# Buscar resultado mais recente
+# Capturar resultado mais recente da API
 resultado = fetch_latest_result()
 
 ultimo_timestamp = (
     st.session_state.historico[-1]["timestamp"] if st.session_state.historico else None
 )
 
-# Se chegou novo sorteio, adiciona e salva
+# Se resultado novo, atualiza e força rerun para atualizar UI imediatamente
 if resultado and resultado["timestamp"] != ultimo_timestamp:
     novo_resultado = {
         "number": resultado["number"],
@@ -38,6 +38,9 @@ if resultado and resultado["timestamp"] != ultimo_timestamp:
     }
     st.session_state.historico.append(novo_resultado)
     salvar_resultado_em_arquivo([novo_resultado])
+
+    # Força o app reiniciar para atualizar a interface na hora
+    st.experimental_rerun()
 
 # Mostrar últimos sorteios
 st.subheader("🧾 Últimos Sorteios (números)")
@@ -65,5 +68,5 @@ with st.expander("📜 Ver histórico completo"):
 
 # Rodapé
 st.markdown("---")
-st.caption("🔁 Atualiza automaticamente a cada 5 segundos.")
+st.caption("🔁 Atualiza automaticamente a cada novo sorteio capturado.")
 st.caption("🤖 Desenvolvido com aprendizado de máquina online via `SGDClassifier`.")
