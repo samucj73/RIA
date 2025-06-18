@@ -17,27 +17,36 @@ count = st_autorefresh(interval=40000, limit=None, key="auto_refresh")
 if "historico" not in st.session_state:
     if os.path.exists(HISTORICO_PATH):
         with open(HISTORICO_PATH, "r") as f:
-            st.session_state.historico = json.load(f)
+            try:
+                st.session_state.historico = json.load(f)
+            except json.JSONDecodeError:
+                st.session_state.historico = []
     else:
         st.session_state.historico = []
 
-# Buscar resultado mais recente
+# Buscar resultado mais recente da API
 resultado = fetch_latest_result()
 
 ultimo_timestamp = (
     st.session_state.historico[-1]["timestamp"] if st.session_state.historico else None
 )
 
-# Se chegou novo sorteio, adiciona e salva
-if resultado and resultado["timestamp"] != ultimo_timestamp:
-    novo_resultado = {
-        "number": resultado["number"],
-        "color": resultado["color"],
-        "timestamp": resultado["timestamp"],
-        "lucky_numbers": resultado["lucky_numbers"]
-    }
-    st.session_state.historico.append(novo_resultado)
-    salvar_resultado_em_arquivo([novo_resultado])
+if resultado:
+    if resultado["timestamp"] != ultimo_timestamp:
+        novo_resultado = {
+            "number": resultado["number"],
+            "color": resultado["color"],
+            "timestamp": resultado["timestamp"],
+            "lucky_numbers": resultado["lucky_numbers"]
+        }
+        st.session_state.historico.append(novo_resultado)
+        salvar_resultado_em_arquivo([novo_resultado])
+
+        st.toast(f"🆕 Novo número capturado: **{novo_resultado['number']}** ({novo_resultado['color']})", icon="🎲")
+    else:
+        st.info("⏳ Aguardando novo sorteio...")
+else:
+    st.error("❌ Falha ao obter dados da API.")
 
 # Mostrar últimos sorteios
 st.subheader("🧾 Últimos Sorteios (números)")
@@ -50,16 +59,8 @@ if st.session_state.historico:
 
 # Previsão baseada em IA
 st.subheader("🔮 Previsão de Próximos 4 Números Mais Prováveis")
-
 ia = RoletaIA()
 previsoes = ia.prever_numeros(st.session_state.historico)
-
-# Diagnóstico: contagem de números válidos e inválidos
-numeros_validos = [item["number"] for item in st.session_state.historico if item["number"] != 0]
-numeros_invalidos = [item["number"] for item in st.session_state.historico if item["number"] == 0]
-st.caption(f"📊 Números válidos registrados: {len(numeros_validos)}")
-if numeros_invalidos:
-    st.caption(f"🚫 Números ignorados (zero): {len(numeros_invalidos)} → {numeros_invalidos}")
 
 if previsoes:
     st.success(f"Números Prováveis: {previsoes}")
@@ -69,6 +70,14 @@ else:
 # Histórico completo opcional
 with st.expander("📜 Ver histórico completo"):
     st.json(st.session_state.historico)
+
+# Exibir conteúdo do arquivo salvo, pra facilitar debug
+with st.expander("📂 Ver conteúdo bruto salvo (JSON)"):
+    if os.path.exists(HISTORICO_PATH):
+        with open(HISTORICO_PATH, "r") as f:
+            st.code(f.read(), language="json")
+    else:
+        st.info("Nenhum histórico salvo ainda.")
 
 # Rodapé
 st.markdown("---")
