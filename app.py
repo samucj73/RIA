@@ -3,7 +3,6 @@ import json
 import os
 from fetch_and_save import fetch_latest_result, salvar_resultado_em_arquivo
 from roleta_ia import RoletaIA
-from streamlit_autorefresh import st_autorefresh
 
 HISTORICO_PATH = "historico_resultados.json"
 
@@ -17,9 +16,6 @@ if "historico" not in st.session_state:
             st.session_state.historico = json.load(f)
     else:
         st.session_state.historico = []
-
-# Atualiza automaticamente a cada 5 segundos
-st_autorefresh(interval=5000, key="refresh")
 
 # Capturar resultado mais recente
 resultado = fetch_latest_result()
@@ -40,6 +36,8 @@ if resultado and resultado["timestamp"] != ultimo_timestamp:
     st.experimental_rerun()
 else:
     st.info("🔍 Aguardando novo sorteio...")
+    if st.button("Atualizar agora"):
+        st.experimental_rerun()
 
 # Mostrar últimos sorteios
 st.subheader("🧾 Últimos Sorteios (números)")
@@ -67,5 +65,5 @@ with st.expander("📜 Ver histórico completo"):
 
 # Rodapé
 st.markdown("---")
-st.caption("🔁 Atualiza automaticamente a cada 5 segundos.")
+st.caption("🔁 Atualiza manualmente com o botão acima.")
 st.caption("🤖 Desenvolvido com aprendizado de máquina online via `SGDClassifier`.")
