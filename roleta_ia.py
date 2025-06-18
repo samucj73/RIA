@@ -1,10 +1,6 @@
 from collections import Counter
 from sklearn.linear_model import SGDClassifier
 import numpy as np
-import os
-import json
-
-MODEL_PATH = "modelo_ia.pkl"
 
 def get_color(n):
     if n == 0:
@@ -22,7 +18,7 @@ def get_linha(n):
 
 def extrair_features(numero, freq):
     return [
-        numero % 2,                    # Par(0)/Ímpar(1)
+        numero % 2,                    # Par/Ímpar
         numero % 3,                    # Resto por 3
         1 if 19 <= numero <= 36 else 0,  # Alto/Baixo
         get_color(numero),            # Cor
@@ -59,28 +55,30 @@ class ModeloIA:
         top_indices = np.argsort(proba)[::-1][:4]
         return list(top_indices)
 
-modelo_global = ModeloIA()
+# ✅ Classe RoletaIA que o app.py precisa
+class RoletaIA:
+    def __init__(self):
+        self.modelo = ModeloIA()
 
-def atualizar_e_prever(history):
-    if len(history) < 20:
-        return []
+    def prever_numeros(self, historico):
+        if len(historico) < 20:
+            return []
 
-    numeros = [item["number"] for item in history if item["number"] != 0]
-    freq = Counter(numeros)
+        numeros = [item["number"] for item in historico if item["number"] != 0]
+        freq = Counter(numeros)
 
-    entradas = []
-    saidas = []
+        entradas = []
+        saidas = []
 
-    for i in range(18, len(numeros) - 1):
-        janela = numeros[i-18:i]
-        entrada = construir_entrada(janela, freq)
-        entradas.append(entrada)
-        saidas.append(numeros[i])
+        for i in range(18, len(numeros) - 1):
+            janela = numeros[i-18:i]
+            entrada = construir_entrada(janela, freq)
+            entradas.append(entrada)
+            saidas.append(numeros[i])
 
-    if entradas:
-        modelo_global.treinar(entradas, saidas)
+        if entradas:
+            self.modelo.treinar(entradas, saidas)
 
-    # Prever com a janela mais recente
-    janela_recente = numeros[-18:]
-    entrada = construir_entrada(janela_recente, freq)
-    return modelo_global.prever(entrada)
+        janela_recente = numeros[-18:]
+        entrada = construir_entrada(janela_recente, freq)
+        return self.modelo.prever(entrada)
