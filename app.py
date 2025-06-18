@@ -27,16 +27,15 @@ if "historico" not in st.session_state:
 if "acertos" not in st.session_state:
     st.session_state.acertos = []
 
+if "previsoes" not in st.session_state:
+    st.session_state.previsoes = []
+
 # Buscar resultado mais recente da API
 resultado = fetch_latest_result()
 
 ultimo_timestamp = (
     st.session_state.historico[-1]["timestamp"] if st.session_state.historico else None
 )
-
-# Instanciar IA
-ia = RoletaIA()
-previsoes = ia.prever_numeros(st.session_state.historico)
 
 if resultado:
     if resultado["timestamp"] != ultimo_timestamp:
@@ -46,13 +45,18 @@ if resultado:
             "timestamp": resultado["timestamp"],
             "lucky_numbers": resultado["lucky_numbers"]
         }
+
         st.session_state.historico.append(novo_resultado)
         salvar_resultado_em_arquivo([novo_resultado])
 
         st.toast(f"🆕 Novo número capturado: **{novo_resultado['number']}** ({novo_resultado['color']})", icon="🎲")
 
+        # Recalcula previsões SOMENTE se houver novo número
+        ia = RoletaIA()
+        st.session_state.previsoes = ia.prever_numeros(st.session_state.historico)
+
         # Verifica se houve acerto nas previsões
-        if previsoes and resultado["number"] in previsoes:
+        if st.session_state.previsoes and resultado["number"] in st.session_state.previsoes:
             if resultado["number"] not in st.session_state.acertos:
                 st.session_state.acertos.append(resultado["number"])
                 st.toast(f"🎯 Acerto! Número {resultado['number']} estava na previsão!", icon="✅")
@@ -72,8 +76,8 @@ if st.session_state.historico:
 
 # Previsão baseada em IA
 st.subheader("🔮 Previsão de Próximos 4 Números Mais Prováveis")
-if previsoes:
-    st.success(f"Números Prováveis: {previsoes}")
+if st.session_state.previsoes:
+    st.success(f"Números Prováveis: {st.session_state.previsoes}")
 else:
     st.warning("Aguardando pelo menos 20 sorteios válidos para iniciar previsões.")
 
