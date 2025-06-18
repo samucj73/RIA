@@ -10,7 +10,7 @@ HISTORICO_PATH = "historico_resultados.json"
 st.set_page_config(page_title="Roleta IA", layout="wide")
 st.title("🎯 Previsão Inteligente de Roleta")
 
-# Autorefresh a cada 2 segundos (pode ajustar para mais rápido se quiser)
+# Autorefresh a cada 2 segundos (2000 ms)
 st_autorefresh(interval=2000, limit=None, key="auto_refresh")
 
 # Inicializar histórico
@@ -39,7 +39,6 @@ if resultado and resultado["timestamp"] != ultimo_timestamp:
     st.session_state.historico.append(novo_resultado)
     salvar_resultado_em_arquivo([novo_resultado])
 
-    # Força o app reiniciar para atualizar a interface na hora
     st.experimental_rerun()
 
 # Mostrar últimos sorteios
