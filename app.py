@@ -10,7 +10,7 @@ HISTORICO_PATH = "historico_resultados.json"
 st.set_page_config(page_title="Roleta IA", layout="wide")
 st.title("🎯 Previsão Inteligente de Roleta")
 
-# Autorefresh a cada 5 segundos (5000 ms)
+# Autorefresh a cada 40 segundos (40000 ms)
 count = st_autorefresh(interval=40000, limit=None, key="auto_refresh")
 
 # Inicializar histórico
@@ -54,6 +54,13 @@ st.subheader("🔮 Previsão de Próximos 4 Números Mais Prováveis")
 ia = RoletaIA()
 previsoes = ia.prever_numeros(st.session_state.historico)
 
+# Diagnóstico: contagem de números válidos e inválidos
+numeros_validos = [item["number"] for item in st.session_state.historico if item["number"] != 0]
+numeros_invalidos = [item["number"] for item in st.session_state.historico if item["number"] == 0]
+st.caption(f"📊 Números válidos registrados: {len(numeros_validos)}")
+if numeros_invalidos:
+    st.caption(f"🚫 Números ignorados (zero): {len(numeros_invalidos)} → {numeros_invalidos}")
+
 if previsoes:
     st.success(f"Números Prováveis: {previsoes}")
 else:
@@ -65,5 +72,5 @@ with st.expander("📜 Ver histórico completo"):
 
 # Rodapé
 st.markdown("---")
-st.caption("🔁 Atualiza automaticamente a cada 5 segundos.")
+st.caption("🔁 Atualiza automaticamente a cada 40 segundos.")
 st.caption("🤖 Desenvolvido com aprendizado de máquina online via `SGDClassifier`.")
