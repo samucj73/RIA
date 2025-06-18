@@ -1,72 +1,73 @@
 import streamlit as st
-import json
+import time
 import os
+import json
 from fetch_and_save import fetch_latest_result, salvar_resultado_em_arquivo
-from roleta_ia import RoletaIA
 
 HISTORICO_PATH = "historico_resultados.json"
 
 st.set_page_config(page_title="Roleta IA", layout="wide")
 st.title("🎯 Previsão Inteligente de Roleta")
 
-# 🔁 Se foi marcada atualização, reseta flag e reinicia app
-if st.session_state.get("forcar_rerun", False):
-    st.session_state.forcar_rerun = False
-    st.experimental_rerun()
-
-# Inicializa histórico do JSON
+# Inicializar histórico na sessão
 if "historico" not in st.session_state:
     if os.path.exists(HISTORICO_PATH):
         with open(HISTORICO_PATH, "r") as f:
-            st.session_state.historico = json.load(f)
+            try:
+                st.session_state.historico = json.load(f)
+            except:
+                st.session_state.historico = []
     else:
         st.session_state.historico = []
 
-# Captura resultado mais recente da API
-resultado = fetch_latest_result()
-ultimo_timestamp = (
-    st.session_state.historico[-1]["timestamp"] if st.session_state.historico else None
-)
+def salvar_historico_unico(history, caminho=HISTORICO_PATH):
+    dados_existentes = []
+    if os.path.exists(caminho):
+        with open(caminho, "r") as f:
+            try:
+                dados_existentes = json.load(f)
+            except:
+                dados_existentes = []
+    todos = dados_existentes + history
+    seen = {}
+    for item in todos:
+        seen[item["timestamp"]] = item
+    dados_unicos = list(seen.values())
+    dados_unicos.sort(key=lambda x: x["timestamp"])
+    with open(caminho, "w") as f:
+        json.dump(dados_unicos, f, indent=2)
 
-# ➕ Se chegou novo resultado
-if resultado and resultado["timestamp"] != ultimo_timestamp:
-    novo_resultado = {
-        "number": resultado["number"],
-        "color": resultado["color"],
-        "timestamp": resultado["timestamp"],
-        "lucky_numbers": resultado["lucky_numbers"]
-    }
-    st.session_state.historico.append(novo_resultado)
-    salvar_resultado_em_arquivo([novo_resultado])
+# Função para buscar resultado e atualizar se houver novidade
+def atualizar_resultado():
+    resultado = fetch_latest_result()
+    ultimo_timestamp = st.session_state.historico[-1]["timestamp"] if st.session_state.historico else None
 
-    # ⚠️ Ativa flag para forçar atualização e para execução
-    st.session_state.forcar_rerun = True
-    st.stop()
+    if resultado and resultado["timestamp"] != ultimo_timestamp:
+        novo_resultado = {
+            "number": resultado["number"],
+            "color": resultado["color"],
+            "timestamp": resultado["timestamp"],
+            "lucky_numbers": resultado["lucky_numbers"]
+        }
+        st.session_state.historico.append(novo_resultado)
+        salvar_historico_unico([novo_resultado])
+        st.experimental_rerun()
 
-# Exibe últimos 10 resultados
+# Loop de atualização automática (polling a cada 5 segundos)
+atualizar_resultado()
+st.info("🔄 Aguardando novo sorteio... (a página vai atualizar automaticamente)")
+
+# Exibir últimos 10 números sorteados
 st.subheader("🧾 Últimos Sorteios (números)")
 st.write([h["number"] for h in st.session_state.historico[-10:]])
 
-# Último timestamp
+# Mostrar data/hora do último sorteio
 if st.session_state.historico:
     ultimo = st.session_state.historico[-1]
     st.caption(f"⏰ Último sorteio registrado: {ultimo['timestamp']}")
 
-# Previsão com IA
-st.subheader("🔮 Previsão de Próximos 4 Números Mais Prováveis")
-ia = RoletaIA()
-previsoes = ia.prever_numeros(st.session_state.historico)
+# Aqui você pode colocar a parte da previsão da IA se quiser
 
-if previsoes:
-    st.success(f"Números Prováveis: {previsoes}")
-else:
-    st.warning("Aguardando pelo menos 20 sorteios válidos para iniciar previsões.")
-
-# Histórico completo
-with st.expander("📜 Ver histórico completo"):
-    st.json(st.session_state.historico)
-
-# Rodapé
-st.markdown("---")
-st.caption("🔁 Atualiza automaticamente ao detectar novo número.")
-st.caption("🤖 Desenvolvido com aprendizado de máquina via `SGDClassifier`.")
+# Pausa para aguardar próximo fetch (controla a velocidade do polling)
+time.sleep(5)
+st.experimental_rerun()
