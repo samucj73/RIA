@@ -3,20 +3,11 @@ import json
 import os
 from fetch_and_save import fetch_latest_result, salvar_resultado_em_arquivo
 from roleta_ia import RoletaIA
-from streamlit_extras.st_autorefresh import st_autorefresh  # 🔁 Importação nova
 
 HISTORICO_PATH = "historico_resultados.json"
 
-# ✅ Atualiza automaticamente a cada 10 segundos
-st_autorefresh(interval=10000, key="auto_refresh")  # 10000 ms = 10 segundos
-
 st.set_page_config(page_title="Roleta IA", layout="wide")
 st.title("🎯 Previsão Inteligente de Roleta")
-
-# 🔁 Se flag de rerun estiver ativa, faz o rerun e limpa
-if st.session_state.get("forcar_rerun", False):
-    st.session_state.forcar_rerun = False
-    st.experimental_rerun()
 
 # Inicializar histórico
 if "historico" not in st.session_state:
@@ -26,14 +17,13 @@ if "historico" not in st.session_state:
     else:
         st.session_state.historico = []
 
-# Capturar resultado mais recente
+# Capturar resultado mais recente da API
 resultado = fetch_latest_result()
-
 ultimo_timestamp = (
     st.session_state.historico[-1]["timestamp"] if st.session_state.historico else None
 )
 
-# Verifica se há novo sorteio
+# Se chegou novo resultado, adiciona ao histórico e para execução para forçar rerun
 if resultado and resultado["timestamp"] != ultimo_timestamp:
     novo_resultado = {
         "number": resultado["number"],
@@ -43,21 +33,20 @@ if resultado and resultado["timestamp"] != ultimo_timestamp:
     }
     st.session_state.historico.append(novo_resultado)
     salvar_resultado_em_arquivo([novo_resultado])
-    st.session_state.forcar_rerun = True
-    st.stop()  # Interrompe execução antes de rerodar
+    st.experimental_rerun()
+    st.stop()  # ⛔️ Impede renderização com dados desatualizados
 
-# Mostrar últimos sorteios
+# Exibir últimos sorteios
 st.subheader("🧾 Últimos Sorteios (números)")
 st.write([h["number"] for h in st.session_state.historico[-10:]])
 
-# Mostrar data/hora do último sorteio
+# Exibir timestamp
 if st.session_state.historico:
     ultimo = st.session_state.historico[-1]
     st.caption(f"⏰ Último sorteio registrado: {ultimo['timestamp']}")
 
-# Previsão baseada em IA
+# Previsão com IA
 st.subheader("🔮 Previsão de Próximos 4 Números Mais Prováveis")
-
 ia = RoletaIA()
 previsoes = ia.prever_numeros(st.session_state.historico)
 
@@ -66,15 +55,11 @@ if previsoes:
 else:
     st.warning("Aguardando pelo menos 20 sorteios válidos para iniciar previsões.")
 
-# Spinner visual
-with st.spinner("⏳ Aguardando novo sorteio..."):
-    st.empty()
-
-# Mostrar histórico completo opcional
+# Histórico completo
 with st.expander("📜 Ver histórico completo"):
     st.json(st.session_state.historico)
 
 # Rodapé
 st.markdown("---")
-st.caption("🔁 Atualização automática a cada 10 segundos.")
+st.caption("🔁 Atualização automática instantânea sempre que novo número for sorteado.")
 st.caption("🤖 Desenvolvido com aprendizado de máquina online via `SGDClassifier`.")
