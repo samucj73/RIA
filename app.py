@@ -3,8 +3,12 @@ import json
 import os
 from fetch_and_save import fetch_latest_result, salvar_resultado_em_arquivo
 from roleta_ia import RoletaIA
+from streamlit_extras.st_autorefresh import st_autorefresh  # 🔁 Importação nova
 
 HISTORICO_PATH = "historico_resultados.json"
+
+# ✅ Atualiza automaticamente a cada 10 segundos
+st_autorefresh(interval=10000, key="auto_refresh")  # 10000 ms = 10 segundos
 
 st.set_page_config(page_title="Roleta IA", layout="wide")
 st.title("🎯 Previsão Inteligente de Roleta")
@@ -62,7 +66,7 @@ if previsoes:
 else:
     st.warning("Aguardando pelo menos 20 sorteios válidos para iniciar previsões.")
 
-# Animação enquanto aguarda próximo sorteio
+# Spinner visual
 with st.spinner("⏳ Aguardando novo sorteio..."):
     st.empty()
 
@@ -72,5 +76,5 @@ with st.expander("📜 Ver histórico completo"):
 
 # Rodapé
 st.markdown("---")
-st.caption("🔁 Atualização automática ativada.")
+st.caption("🔁 Atualização automática a cada 10 segundos.")
 st.caption("🤖 Desenvolvido com aprendizado de máquina online via `SGDClassifier`.")
