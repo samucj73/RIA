@@ -9,6 +9,11 @@ HISTORICO_PATH = "historico_resultados.json"
 st.set_page_config(page_title="Roleta IA", layout="wide")
 st.title("🎯 Previsão Inteligente de Roleta")
 
+# 🔁 Se flag de rerun estiver ativa, faz o rerun e limpa
+if st.session_state.get("forcar_rerun", False):
+    st.session_state.forcar_rerun = False
+    st.experimental_rerun()
+
 # Inicializar histórico
 if "historico" not in st.session_state:
     if os.path.exists(HISTORICO_PATH):
@@ -24,6 +29,7 @@ ultimo_timestamp = (
     st.session_state.historico[-1]["timestamp"] if st.session_state.historico else None
 )
 
+# Verifica se há novo sorteio
 if resultado and resultado["timestamp"] != ultimo_timestamp:
     novo_resultado = {
         "number": resultado["number"],
@@ -33,11 +39,8 @@ if resultado and resultado["timestamp"] != ultimo_timestamp:
     }
     st.session_state.historico.append(novo_resultado)
     salvar_resultado_em_arquivo([novo_resultado])
-    st.experimental_rerun()
-else:
-    st.info("🔍 Aguardando novo sorteio...")
-    if st.button("Atualizar agora"):
-        st.experimental_rerun()
+    st.session_state.forcar_rerun = True
+    st.stop()  # Interrompe execução antes de rerodar
 
 # Mostrar últimos sorteios
 st.subheader("🧾 Últimos Sorteios (números)")
@@ -58,6 +61,12 @@ if previsoes:
     st.success(f"Números Prováveis: {previsoes}")
 else:
     st.warning("Aguardando pelo menos 20 sorteios válidos para iniciar previsões.")
+
+# Atualizar manualmente
+st.info("🔍 Aguardando novo sorteio...")
+if st.button("Atualizar agora"):
+    st.session_state.forcar_rerun = True
+    st.experimental_rerun()
 
 # Mostrar histórico completo opcional
 with st.expander("📜 Ver histórico completo"):
