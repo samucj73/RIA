@@ -1,6 +1,5 @@
 streamlit
 streamlit-autorefresh
 requests
-scikit-learn
-pandas
+scikit-lear
 streamlit-extras
