@@ -18,13 +18,13 @@ def get_linha(n):
 
 def extrair_features(numero, freq):
     return [
-        numero % 2,                    # Par/Ímpar
-        numero % 3,                    # Resto por 3
-        1 if 19 <= numero <= 36 else 0,  # Alto/Baixo
-        get_color(numero),            # Cor
-        get_coluna(numero),           # Coluna
-        get_linha(numero),            # Linha
-        freq.get(numero, 0)           # Frequência histórica
+        numero % 2,                      # Par/Ímpar
+        numero % 3,                      # Resto por 3
+        1 if 19 <= numero <= 36 else 0, # Alto/Baixo
+        get_color(numero),              # Cor
+        get_coluna(numero),             # Coluna
+        get_linha(numero),              # Linha
+        freq.get(numero, 0)             # Frequência histórica
     ]
 
 def construir_entrada(janela, freq):
@@ -55,30 +55,33 @@ class ModeloIA:
         top_indices = np.argsort(proba)[::-1][:4]
         return list(top_indices)
 
-# ✅ Classe RoletaIA que o app.py precisa
 class RoletaIA:
     def __init__(self):
         self.modelo = ModeloIA()
 
     def prever_numeros(self, historico):
-        if len(historico) < 20:
-            return []
-
+        # Filtra números válidos (diferentes de 0)
         numeros = [item["number"] for item in historico if item["number"] != 0]
-        freq = Counter(numeros)
+
+        if len(numeros) < 20:
+            return []
 
         entradas = []
         saidas = []
 
         for i in range(18, len(numeros) - 1):
             janela = numeros[i-18:i]
+            saida = numeros[i]
+            freq = Counter(numeros[:i])  # Frequência até a posição atual
             entrada = construir_entrada(janela, freq)
             entradas.append(entrada)
-            saidas.append(numeros[i])
+            saidas.append(saida)
 
-        if entradas:
+        if entradas and saidas:
             self.modelo.treinar(entradas, saidas)
 
+        # Prever com os últimos 18 números
         janela_recente = numeros[-18:]
-        entrada = construir_entrada(janela_recente, freq)
+        freq_final = Counter(numeros[:-1])  # Exclui o último para não "vazar" no treino
+        entrada = construir_entrada(janela_recente, freq_final)
         return self.modelo.prever(entrada)
