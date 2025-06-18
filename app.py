@@ -11,7 +11,7 @@ st.set_page_config(page_title="Roleta IA", layout="wide")
 st.title("🎯 Previsão Inteligente de Roleta")
 
 # Autorefresh a cada 5 segundos (5000 ms)
-count = st_autorefresh(interval=60000, limit=None, key="auto_refresh")
+count = st_autorefresh(interval=40000, limit=None, key="auto_refresh")
 
 # Inicializar histórico
 if "historico" not in st.session_state:
