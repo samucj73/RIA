@@ -3,3 +3,4 @@ streamlit-autorefresh
 requests
 scikit-learn
 pandas
+streamlit-extras
