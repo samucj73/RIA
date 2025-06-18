@@ -62,11 +62,9 @@ if previsoes:
 else:
     st.warning("Aguardando pelo menos 20 sorteios válidos para iniciar previsões.")
 
-# Atualizar manualmente
-st.info("🔍 Aguardando novo sorteio...")
-if st.button("Atualizar agora"):
-    st.session_state.forcar_rerun = True
-    st.experimental_rerun()
+# Animação enquanto aguarda próximo sorteio
+with st.spinner("⏳ Aguardando novo sorteio..."):
+    st.empty()
 
 # Mostrar histórico completo opcional
 with st.expander("📜 Ver histórico completo"):
@@ -74,5 +72,5 @@ with st.expander("📜 Ver histórico completo"):
 
 # Rodapé
 st.markdown("---")
-st.caption("🔁 Atualiza manualmente com o botão acima.")
+st.caption("🔁 Atualização automática ativada.")
 st.caption("🤖 Desenvolvido com aprendizado de máquina online via `SGDClassifier`.")
